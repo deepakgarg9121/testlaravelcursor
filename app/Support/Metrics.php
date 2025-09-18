@@ -33,6 +33,8 @@ final class Metrics
      */
     public static function render(): string
     {
+        // Ensure at least one metric is exposed so the page is not blank
+        self::increment('app_up');
         $lines = [];
         foreach (self::$counters as $name => $series) {
             $sanitizedName = self::sanitizeMetricName($name);
@@ -90,5 +92,3 @@ final class Metrics
         return $value;
     }
 }
-
-
