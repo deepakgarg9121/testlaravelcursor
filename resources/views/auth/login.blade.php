@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Login - Facebook Clone</title>
+    <title>Login - Cursortestproject Clone</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -195,8 +195,8 @@
 <body>
     <div class="container">
         <div class="brand-section">
-            <h1 class="brand-logo">facebook</h1>
-            <p class="brand-tagline">Connect with friends and the world around you on Facebook.</p>
+            <h1 class="brand-logo">Cursortestproject</h1>
+            <p class="brand-tagline">Connect with friends and the world around you on Cursortestproject.</p>
         </div>
 
         <div class="login-section">
@@ -229,7 +229,7 @@
     </div>
 
     <div class="footer">
-        <p>This is a demo Facebook-like login page created with Laravel</p>
+        <p>This is a demo Cursortestproject-like login page created with Laravel</p>
     </div>
 
     <script>
