@@ -18,14 +18,17 @@ final class Metrics
      */
     public static function increment(string $name, array $labels = [], int $value = 1): void
     {
+        // Load persisted metrics first
+        $all = self::load();
         $metricKey = self::formatMetricKey($name, $labels);
-        if (!isset(self::$counters[$name])) {
-            self::$counters[$name] = [];
+        if (!isset($all[$name])) {
+            $all[$name] = [];
         }
-        if (!isset(self::$counters[$name][$metricKey])) {
-            self::$counters[$name][$metricKey] = 0;
+        if (!isset($all[$name][$metricKey])) {
+            $all[$name][$metricKey] = 0;
         }
-        self::$counters[$name][$metricKey] += $value;
+        $all[$name][$metricKey] += $value;
+        self::save($all);
     }
 
     /**
@@ -33,14 +36,18 @@ final class Metrics
      */
     public static function render(): string
     {
-        // Ensure at least one metric is exposed so the page is not blank
-        self::increment('app_up');
+        // Load persisted metrics and ensure a default up counter exists
+        $all = self::load();
+        if (!isset($all['app_up'])) {
+            $all['app_up'] = ['app_up' => 1];
+            self::save($all);
+        }
+
         $lines = [];
-        foreach (self::$counters as $name => $series) {
+        foreach ($all as $name => $series) {
             $sanitizedName = self::sanitizeMetricName($name);
             $lines[] = "# TYPE {$sanitizedName} counter";
             foreach ($series as $key => $value) {
-                // $key is already like: name{labels}
                 $lines[] = $key . ' ' . $value;
             }
         }
@@ -90,5 +97,55 @@ final class Metrics
         $value = str_replace('"', '\\"', $value);
         $value = str_replace(["\n", "\r"], ' ', $value);
         return $value;
+    }
+
+    /**
+     * Load metrics from storage.
+     *
+     * @return array<string, array<string, int>>
+     */
+    private static function load(): array
+    {
+        $path = self::storagePath();
+        if (!file_exists($path)) {
+            return [];
+        }
+        $json = @file_get_contents($path);
+        if ($json === false) {
+            return [];
+        }
+        $data = json_decode($json, true);
+        return is_array($data) ? $data : [];
+    }
+
+    /**
+     * Save metrics to storage with a simple atomic write.
+     *
+     * @param array<string, array<string, int>> $data
+     */
+    private static function save(array $data): void
+    {
+        $path = self::storagePath();
+        $dir = dirname($path);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0777, true);
+        }
+        $tmp = $path . '.' . (string) mt_rand() . '.tmp';
+        $payload = json_encode($data, JSON_UNESCAPED_SLASHES);
+        if ($payload === false) {
+            return;
+        }
+        if (@file_put_contents($tmp, $payload) !== false) {
+            @rename($tmp, $path);
+        }
+    }
+
+    private static function storagePath(): string
+    {
+        // storage/app/metrics.json
+        if (function_exists('storage_path')) {
+            return rtrim(storage_path('app'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'metrics.json';
+        }
+        return __DIR__ . DIRECTORY_SEPARATOR . 'metrics.json';
     }
 }
