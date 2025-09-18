@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Support\Metrics;
 
 class AuthController extends Controller
 {
@@ -18,12 +19,14 @@ class AuthController extends Controller
         $user = User::where('username', $request->username)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
+            Metrics::increment('auth_logins_total', ['outcome' => 'failure']);
             return response()->json([
                 'message' => 'Invalid credentials'
             ], 401);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
+        Metrics::increment('auth_logins_total', ['outcome' => 'success']);
 
         return response()->json([
             'message' => 'Login successful',
